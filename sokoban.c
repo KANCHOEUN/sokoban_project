@@ -1,24 +1,27 @@
 #include <stdio.h>
 #include <termio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #define Y 30
 #define X 30
 #define STAGE 5
 
 int map[STAGE][Y][X];
+int origin_map[STAGE][Y][X];
 int player[STAGE][Y][X];
 int player_x[STAGE], player_y[STAGE];
 int x, y;
 int stage = -1;
-int box_cnt = 0;
-int clear_cnt = 0;
+int box_cnt[STAGE];
+int clear_cnt[STAGE];
 
 int getch();
 void MapLoad();
 void MapDraw();
 void MapClear();
 void PlayerMove();
+bool StageClear();
 
 int getch(void){
 
@@ -77,12 +80,12 @@ void MapLoad()
 
     if(ch == '$')
     {
-      box_cnt++;
+      box_cnt[stage]++;
     }
 
     if(ch == 'O')
     {
-      clear_cnt++;
+      clear_cnt[stage]++;
     }
 
     if(ch == '\n')
@@ -98,6 +101,26 @@ void MapLoad()
     }
   }
 
+  for(int i = 0; i < STAGE; i++)
+  {
+    for(int j = 0; j < Y; j++)
+    {
+      for(int k = 0; k < X; k++)
+      {
+        origin_map[i][j][k] = map[i][j][k];
+      }
+    }
+  }
+
+  for(int i = 0; i < STAGE; i++)
+  {
+    if(box_cnt[i] != clear_cnt[i])
+    {
+      printf("ERROR : 박스 개수와 도착 지점의 개수가 다릅니다.\n");
+      exit(1);
+    }
+  }
+
   stage = 0;
 
   fclose(fp);
@@ -105,14 +128,6 @@ void MapLoad()
 
 void MapDraw()
 {
-  if(box_cnt != clear_cnt)
-  {
-    printf("ERROR : 박스 개수와 도착 지점의 개수가 다릅니다.\n");
-    exit(1);
-  }
-
-  map[stage][player_y[stage]][player_x[stage]] = '@';
-
   for(int i = 0; i < Y; i++)
   {
     for(int j = 0; j < X; j++)
@@ -121,6 +136,7 @@ void MapDraw()
     }
     printf("\n");
   }
+  StageClear();
 }
 
 void MapClear()
@@ -132,30 +148,30 @@ void MapClear()
 void PlayerMove()
 {
   char key;
+  int dx = 0, dy = 0;
 
   key = getch();
-  map[stage][player_y[stage]][player_x[stage]] = ' ';
 
   switch(key)
   {
     case 'h':
     case 'H':
-      player_x[stage]--;
+      dx = -1;
       break;
 
     case 'j':
     case 'J':
-      player_y[stage]++;
+      dy = 1;
       break;
 
     case 'k':
     case 'K':
-      player_y[stage]--;
+      dy = -1;
       break;
 
     case 'l':
     case 'L':
-      player_x[stage]++;
+      dx = 1;
       break;
 
     case 'e':
@@ -163,14 +179,80 @@ void PlayerMove()
       printf("프로그램을 종료합니다.");
       exit(0);
       break;
+
+    case '*':
+      stage++;
+      break;
   }
+
+  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '#')
+  {
+    dx = 0;
+    dy = 0;
+  }
+  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$')
+  {
+    if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == ' ')
+    {
+      map[stage][player_y[stage] + dy][player_x[stage] + dx] = '@';
+      map[stage][player_y[stage] + 2*dy][player_x[stage]+ 2*dx] = '$';
+    }
+    else if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == '#' || map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == '$')
+    {
+      dx = 0;
+      dy = 0;
+    }
+  }
+  if(map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] == 'O' &&map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$')
+  {
+    map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] = '$';
+  }
+
+  map[stage][player_y[stage]][player_x[stage]] = ' ';
+
+  if(origin_map[stage][player_y[stage]][player_x[stage]] == 'O')
+  {
+    map[stage][player_y[stage]][player_x[stage]] = 'O';
+  }
+  player_x[stage] += dx;
+  player_y[stage] += dy;
+  map[stage][player_y[stage]][player_x[stage]] = '@';
+}
+
+bool StageClear()
+{
+  int count = 0;
+  bool flag = false;
+
+  for(int y = 0; y < Y; y++)
+  {
+    for(int x = 0; x < X; x++)
+    {
+      if(origin_map[stage][y][x] == 'O' && map[stage][y][x] == '$')
+      {
+        count++;
+      }
+    }
+  }
+
+  if(count == clear_cnt[stage])
+  {
+    stage++;
+    flag = true;
+  }
+  if(stage >= 5)
+  {
+    printf("축하합니다\n");
+    printf("당신은 모든 맵을 클리어했습니다.");
+    exit(0);
+  }
+  return flag;
 }
 
 int main()
 {
   MapLoad();
 
-  MapDraw();
   while(1)
   {
     MapClear();
