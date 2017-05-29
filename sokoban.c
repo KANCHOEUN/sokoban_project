@@ -2,6 +2,7 @@
 #include <termio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #define Y 30
 #define X 30
@@ -15,13 +16,17 @@ int x, y;
 int stage = -1;
 int box_cnt[STAGE];
 int clear_cnt[STAGE];
+char username[11];
 
 int getch();
 void MapLoad();
 void MapDraw();
 void MapClear();
 void PlayerMove();
+void UserName();
+void FileLoad();
 bool StageClear();
+
 
 int getch(void){
 
@@ -128,6 +133,10 @@ void MapLoad()
 
 void MapDraw()
 {
+  StageClear();
+
+  printf("    Hello %s\n\n", username);
+
   for(int i = 0; i < Y; i++)
   {
     for(int j = 0; j < X; j++)
@@ -136,13 +145,107 @@ void MapDraw()
     }
     printf("\n");
   }
-  StageClear();
 }
 
 void MapClear()
 {
   system("clear");
   system("clear");
+}
+
+void Save()
+{
+  FILE *save;
+  int i;
+
+  save = fopen("sokoban.txt", "w");
+
+  fprintf(save, "%s\n", username);
+
+  fprintf(save, "%d\n", stage);
+
+  i = stage;
+
+  for(int j = 0; j < Y; j++)
+  {
+    for(int k = 0; k < X; k++)
+    {
+      fprintf(save, "%c", map[i][j][k]);
+    }
+    fprintf(save, "\n");
+  }
+
+  fclose(save);
+}
+
+void FileLoad()
+{
+  FILE *fileload;
+  char ch;
+  int i = 0;
+  int j;
+  int load_map[Y][X];
+  int load_x = 0, load_y = -2;
+  int line_cnt = 0;
+
+
+  for(int i = 0; i < 11; i++)
+  {
+    username[i] = ' ';
+  }
+
+  fileload = fopen("sokoban.txt", "r");
+
+  while(fscanf(fileload, "%c", &ch) != EOF)
+  {
+    if(ch == '\n')
+    {
+      load_x = 0;
+      load_y++;
+      line_cnt++;
+    }
+    else if ((line_cnt == 0) && (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')))
+    {
+      username[i] = ch;
+      ++i;
+    }
+    else if ((line_cnt == 1) && ('0' <= ch && ch <= '9'))
+    {
+      stage = ch - '0';
+    }
+    else
+    {
+      load_map[load_y][load_x] = ch;
+      load_x++;
+    }
+
+    if(ch == '@')
+    {
+      player_y[stage] = load_y;
+      player_x[stage] = load_x - 1;
+    }
+  }
+
+  username[++i] = '\0';
+
+  for(int a = 0; a < Y; a++)
+  {
+    for(int b = 0; b < X; b++)
+    {
+      map[stage][a][b] = load_map[a][b];
+    }
+  }
+
+  fclose(fileload);
+}
+
+void UserName()
+{
+  printf("Start....\n");
+  printf("input name : ");
+  scanf("%s", username);
+  sleep(1);
+  MapClear();
 }
 
 void PlayerMove()
@@ -174,9 +277,20 @@ void PlayerMove()
       dx = 1;
       break;
 
+    case 's':
+    case 'S':
+      Save();
+      break;
+
+    case 'f':
+    case 'F':
+      FileLoad();
+      break;
+
     case 'e':
     case 'E':
-      printf("프로그램을 종료합니다.");
+      printf("SEE YOU %s . . . .", username);
+      Save();
       exit(0);
       break;
 
@@ -251,6 +365,7 @@ bool StageClear()
 
 int main()
 {
+  UserName();
   MapLoad();
 
   while(1)
