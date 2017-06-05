@@ -17,6 +17,7 @@ int stage = -1;
 int box_cnt[STAGE];
 int clear_cnt[STAGE];
 char username[11];
+int t_bl = 0;
 
 int getch();
 void MapLoad();
@@ -26,7 +27,7 @@ void PlayerMove();
 void UserName();
 void FileLoad();
 bool StageClear();
-
+void Option(char key);
 
 int getch(void){
 
@@ -188,6 +189,13 @@ void FileLoad()
   int load_x = 0, load_y = -2;
   int line_cnt = 0;
 
+  if ((fileload = fopen("sokoban.txt", "r")) == NULL)
+  {
+    printf("\n\n\nLoad File Doesn't Exist.\n\n");
+
+    exit(1);
+  }
+  fclose(fileload);
 
   for(int i = 0; i < 11; i++)
   {
@@ -241,9 +249,50 @@ void FileLoad()
 
 void UserName()
 {
+  bool flag;
+  int i = 0;
+  int length;
+
   printf("Start....\n");
-  printf("input name : ");
-  scanf("%s", username);
+
+  for(int i = 0; i < 11; i++)
+  {
+    username[i] = ' ';
+  }
+
+  while(1)
+  {
+    flag = true;
+    length = 0;
+    printf("input name : ");
+    scanf("%s", username);
+
+    for(int i = 0; i < 11; i++)
+    {
+      if(!(('a' <= username[i] && username[i] <= 'z') || ('A' <= username[i] && username[i] <= 'Z')) && (username[i] != '\0'))
+      {
+        flag = false;
+      }
+
+      if(username[i] == '\0')
+        break;
+    }
+
+    while(username[length] != '\0')
+    {
+      if(length > 9)
+        flag = false;
+
+      length++;
+    }
+
+    if(flag)
+      break;
+
+    printf("Name Must Be In English And Do Not Exceed 10 Letters.\n");
+  }
+
+  getch();
   sleep(1);
   MapClear();
 }
@@ -252,6 +301,8 @@ void PlayerMove()
 {
   char key;
   int dx = 0, dy = 0;
+
+  printf("(Command) ");
 
   key = getch();
 
@@ -277,26 +328,14 @@ void PlayerMove()
       dx = 1;
       break;
 
-    case 's':
-    case 'S':
-      Save();
-      break;
-
-    case 'f':
-    case 'F':
-      FileLoad();
-      break;
-
-    case 'e':
-    case 'E':
-      printf("SEE YOU %s . . . .", username);
-      Save();
-      exit(0);
-      break;
-
     case '*':
       stage++;
       break;
+  }
+
+  if(((((((key != 'h' && key != 'j') && key != 'k') && key != 'l') && key != 'H') && key != 'J') && key != 'K') && key != 'L')
+  {
+    Option(key);
   }
 
   if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '#')
@@ -356,11 +395,111 @@ bool StageClear()
   }
   if(stage >= 5)
   {
-    printf("축하합니다\n");
-    printf("당신은 모든 맵을 클리어했습니다.");
+    printf("\n\nCongratulations !\n");
+    printf("\nAll Stage Clear !\n\n");
     exit(0);
   }
   return flag;
+}
+
+void Option(char key)
+{
+  char enter;
+  int Top_i;
+
+  if(((((((key != 'h' && key != 'j') && key != 'k') && key != 'l') && key != 'H') && key != 'J') && key != 'K') && key != 'L')
+    printf("%c", key);
+
+  enter = getch();
+
+  switch (key)
+  {
+      case 's':
+      case 'S':
+      if(enter == '\n')
+        Save();
+        break;
+
+      case 'f':
+      case 'F':
+      if(enter == '\n')
+        FileLoad();
+        break;
+
+      case 't':
+      case 'T':
+        if(t_bl == 0)
+        {
+          t_bl = 1;
+        }
+        switch (enter)
+        {
+          case '1' :
+            Top_i = 1;
+            printf("1\n");
+            break;
+
+          case '2' :
+            Top_i = 2;
+            printf("2\n");
+
+          case '3' :
+            Top_i = 3;
+            printf("3\n");
+
+          case '4' :
+            Top_i = 4;
+            printf("4\n");
+
+          case '5' :
+            Top_i = 5;
+            printf("5\n");
+
+          case '\n' :
+            Top_i = -1;
+            break;
+
+          default :
+            Top_i = -1;
+            printf("\n-----------------------------------\n\n       Command Doesn't Exit.\n\n-----------------------------------\n");
+            sleep(1);
+            break;
+        }
+
+        while(1)
+        {
+          if(Top_i == 0)
+          {
+
+            break;
+          }
+          if(Top_i == -1)
+          {
+            break;
+          }
+          if(getch() == '\n' && Top_i != 0 && Top_i != -1)
+          {
+
+            break;
+          }
+        }
+        break;
+
+      case 'e':
+      case 'E':
+      if(enter == '\n')
+        MapClear();
+        printf("\n\n\nSEE YOU %s . . . .\n\n\n", username);
+        Save();
+        exit(0);
+        break;
+
+      default :
+      if(enter == '\n')
+        printf("\n-----------------------------------\n\n       Command Doesn't Exist.\n\n-----------------------------------\n");
+        sleep(1);
+        break;
+  }
 }
 
 int main()
