@@ -326,7 +326,6 @@ void PlayerMove()
   if(((((((key != 'h' || key != 'j') || key != 'k') || key != 'l') || key != 'H') || key != 'J') || key != 'K') || key != 'L')
     Option(key);
 
-
   if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '#')
   {
     dx = 0;
