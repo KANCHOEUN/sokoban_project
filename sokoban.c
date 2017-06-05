@@ -26,7 +26,7 @@ void PlayerMove();
 void UserName();
 void FileLoad();
 bool StageClear();
-
+void Option(char key);
 
 int getch(void){
 
@@ -188,7 +188,6 @@ void FileLoad()
   int load_x = 0, load_y = -2;
   int line_cnt = 0;
 
-
   for(int i = 0; i < 11; i++)
   {
     username[i] = ' ';
@@ -241,9 +240,49 @@ void FileLoad()
 
 void UserName()
 {
+  bool flag;
+  int i = 0;
+  int length;
+
   printf("Start....\n");
-  printf("input name : ");
-  scanf("%s", username);
+
+  for(int i = 0; i < 11; i++)
+  {
+    username[i] = ' ';
+  }
+
+  while(1)
+  {
+    flag = true;
+    length = 0;
+    printf("input name : ");
+    scanf("%s", username);
+
+    for(int i = 0; i < 11; i++)
+    {
+      if(!(('a' <= username[i] && username[i] <= 'z') || ('A' <= username[i] && username[i] <= 'Z')) && (username[i] != '\0'))
+      {
+        flag = false;
+      }
+
+      if(username[i] == '\0')
+        break;
+    }
+
+    while(username[length] != '\0')
+    {
+      if(length > 9)
+        flag = false;
+
+      length++;
+    }
+
+    if(flag)
+      break;
+
+    printf("name must be in english or do not exceed 10 letters.\n");
+  }
+
   sleep(1);
   MapClear();
 }
@@ -252,6 +291,8 @@ void PlayerMove()
 {
   char key;
   int dx = 0, dy = 0;
+
+  printf("(Command)");
 
   key = getch();
 
@@ -277,27 +318,13 @@ void PlayerMove()
       dx = 1;
       break;
 
-    case 's':
-    case 'S':
-      Save();
-      break;
-
-    case 'f':
-    case 'F':
-      FileLoad();
-      break;
-
-    case 'e':
-    case 'E':
-      printf("SEE YOU %s . . . .", username);
-      Save();
-      exit(0);
-      break;
-
     case '*':
       stage++;
       break;
   }
+
+  if(((((((key != 'h' || key != 'j') || key != 'k') || key != 'l') || key != 'H') || key != 'J') || key != 'K') || key != 'L')
+    Option(key);
 
   if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '#')
   {
@@ -361,6 +388,35 @@ bool StageClear()
     exit(0);
   }
   return flag;
+}
+
+void Option(char key)
+{
+  char enter;
+
+  printf(" %c", key);
+  enter = getch();
+  if(enter == '\n')
+  {
+    switch (key) {
+        case 's':
+        case 'S':
+          Save();
+          break;
+
+        case 'f':
+        case 'F':
+          FileLoad();
+          break;
+
+        case 'e':
+        case 'E':
+          printf("SEE YOU %s . . . .", username);
+          Save();
+          exit(0);
+          break;
+    }
+  }
 }
 
 int main()
