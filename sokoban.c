@@ -12,12 +12,16 @@
 int map[STAGE][Y][X];
 int origin_map[STAGE][Y][X];
 int player[STAGE][Y][X];
+int undo[STAGE][Y][X];
 int player_x[STAGE], player_y[STAGE];
 int origin_player_x[STAGE], origin_player_y[STAGE];
 int x, y;
 int stage = -1;
 int box_cnt[STAGE];
 int clear_cnt[STAGE];
+int save_count = 0;
+int undo_count = 5;
+int move_count = 0;
 char username[11];
 int d_bl = 0, t_bl = 0;
 char score_name[STAGE][5][11];
@@ -31,6 +35,8 @@ void MapLoad();
 void MapDraw();
 void MapClear();
 void PlayerMove();
+void UndoMap();
+void Undo();
 void UserName();
 void FileLoad();
 bool StageClear();
@@ -42,7 +48,6 @@ void StartTime();
 void EndTime();
 void Top();
 void SaveTop();
-void ResetTop();
 void StopTime();
 
 int getch(void){
@@ -98,6 +103,9 @@ void MapLoad()
     {
       player_x[stage] = x;
       player_y[stage] = y;
+
+      origin_player_x[stage] = x;
+      origin_player_y[stage] = y;
     }
 
     if(ch == '$')
@@ -363,6 +371,7 @@ void PlayerMove()
   {
     if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == ' ')
     {
+      UndoMap();
       map[stage][player_y[stage] + dy][player_x[stage] + dx] = '@';
       map[stage][player_y[stage] + 2*dy][player_x[stage]+ 2*dx] = '$';
     }
@@ -372,8 +381,20 @@ void PlayerMove()
       dy = 0;
     }
   }
+
+  if(map[stage][player_y[stage]+ dy][player_x[stage] + dx] == ' ')
+  {
+    UndoMap();
+  }
+
+  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == 'O')
+  {
+    UndoMap();
+  }
+
   if(map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] == 'O' &&map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$')
   {
+    UndoMap();
     map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] = '$';
   }
 
@@ -383,9 +404,16 @@ void PlayerMove()
   {
     map[stage][player_y[stage]][player_x[stage]] = 'O';
   }
+
   player_x[stage] += dx;
   player_y[stage] += dy;
   map[stage][player_y[stage]][player_x[stage]] = '@';
+
+  if(!(dx == 0 && dy == 0))
+  {
+    move_count++;
+  }
+
 }
 
 bool StageClear()
@@ -413,12 +441,32 @@ bool StageClear()
     sum_stop = 0;
     StartTime();
   }
+
   if(stage >= 5)
   {
     printf("\n\nCongratulations !\n");
     printf("\nAll Stage Clear !\n\n");
     exit(0);
   }
+
+  if(flag)
+  {
+    for(int k = 0; k < STAGE; k++)
+    {
+      for(int i = 0; i < Y; i++)
+      {
+        for(int j = 0; j < X; j++)
+        {
+          undo[k][i][j] = ' ';
+        }
+      }
+    }
+
+    save_count = 0;
+    undo_count = 5;
+    move_count = 0;
+  }
+
   return flag;
 }
 
@@ -542,6 +590,12 @@ void Option(char key)
         exit(0);
         break;
 
+      case 'u':
+      case 'U':
+      if(enter == '\n')
+        Undo();
+        break;
+
       default :
       if(enter == '\n')
         printf("\n-----------------------------------\n\n       Command Doesn't Exist.\n\n-----------------------------------\n");
@@ -557,7 +611,7 @@ void Display()
     MapClear();
     printf("h : 왼쪽으로 이동, j : 아래로 이동, k : 위로 이동, l : 오른쪽으로 이동\n");
     printf("u : 움직이기 전 상태로 이동한다. (최대 5번 가능)\n");
-    printf("r : 현재 앱을 처음부터 다시시작한다.\n");
+    printf("r : 현재 맵을 처음부터 다시시작한다.\n");
     printf("n : 첫 번째 맵부터 다시 시작\n");
     printf("e : 게임종료\n");
     printf("s : 게임 저장\n");
@@ -580,6 +634,21 @@ void Replay()
   MapClear();
   int i, j, k;
 
+  for(int k = 0; k < STAGE; k++)
+  {
+   for(int i = 0; i < Y; i++)
+    {
+      for(int j = 0; j < X; j++)
+      {
+        undo[k][i][j] = ' ';
+      }
+    }
+  }
+
+  move_count = 0;
+  undo_count = 5;
+  save_count = 0;
+
   i = stage_tmp;
   for(j = 0; j < Y; j++)
   {
@@ -599,6 +668,21 @@ void New()
   stage = 0;
 
   int i, j, k;
+
+  for(int k = 0; k < STAGE; k++)
+  {
+   for(int i = 0; i < Y; i++)
+    {
+      for(int j = 0; j < X; j++)
+      {
+        undo[k][i][j] = ' ';
+      }
+    }
+  }
+
+  move_count = 0;
+  undo_count = 5;
+  save_count = 0;
 
   for(i = 0; i < STAGE; i++)
   {
@@ -830,37 +914,6 @@ void Top(int Top_num)
 
 }
 
-void ResetTop()
-{
-  FILE *fp;
-  int i, j, k;
-
-  for(i = 0; i < STAGE; i++)
-  {
-    for(j = 0; j < 5; j++)
-    {
-      score_name[i][j][0] = '0';
-      score_name[i][j][1] = '.';
-      score_name[i][j][2] = '0';
-      score_name[i][j][3] = '\0';
-      score_time[i][j] = 0.0;
-    }
-  }
-
-  fp = fopen("ranking.txt", "w");
-
-  for(i = 0; i < 5; i++)
-  {
-    for(j = 0; j < 5; j++)
-    {
-      fprintf(fp, "%s ", score_name[i][j]);
-      fprintf(fp, "%.1f\n", score_time[i][j]);
-    }
-  }
-
-  fclose(fp);
-}
-
 void StartTime()
 {
   start_clock = clock();
@@ -879,6 +932,71 @@ void StopTime()
   end_clock = clock();
 
   sum_stop += (double)(end_clock - stop_clock) / 1000;
+}
+
+void UndoMap()
+{
+  int i, j, k = 0;
+
+  if(save_count >= 5)
+  {
+    for(i = 1; i < STAGE; i++)
+    {
+      for(j = 0; j < Y; j++)
+      {
+        for(k = 0; k < X; k++)
+        {
+          undo[i - 1][j][k] = undo[i][j][k];
+        }
+      }
+    }
+    save_count--;
+  }
+
+  for(j = 0; j < Y; j++)
+  {
+    for(k = 0; k < X; k++)
+    {
+      undo[save_count][j][k] = map[stage][j][k];
+    }
+  }
+  save_count++;
+}
+
+
+
+void Undo()
+{
+  int undo_x = 0, undo_y = 0;
+
+  if((undo_count < 1) || ((5 - undo_count) >= move_count))
+    return;
+
+  undo_count--;
+  save_count--;
+
+  for(int i = 0; i < Y; i++)
+  {
+    for(int j = 0; j < X; j++)
+    {
+      map[stage][i][j] = undo[save_count][i][j];
+    }
+  }
+
+  for(int i = 0; i < Y; i++)
+  {
+    for(int j = 0; j < X; j++)
+    {
+      if(map[stage][i][j] == '@')
+      {
+        undo_x = j;
+        undo_y = i;
+      }
+    }
+  }
+
+  player_y[stage] = undo_y;
+  player_x[stage] = undo_x;
 }
 
 int main()
