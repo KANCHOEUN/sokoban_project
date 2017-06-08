@@ -5,24 +5,22 @@
 #include <time.h>
 #include <unistd.h>
 
-#define Y 30
-#define X 30
-#define STAGE 5
+#define Y 30 // 맵 최대 Y 값
+#define X 30 // 맵 최대 X 값
+#define STAGE 5 // 최대 스테이지 값
 
-int map[STAGE][Y][X];
+int map[STAGE][Y][X]; // 맵 저장 배열
 int origin_map[STAGE][Y][X];
-int player[STAGE][Y][X];
 int undo[STAGE][Y][X];
-int player_x[STAGE], player_y[STAGE];
+int player_x[STAGE], player_y[STAGE]; // 플레이어의 위치
 int origin_player_x[STAGE], origin_player_y[STAGE];
-int x, y;
-int stage = -1;
-int box_cnt[STAGE];
-int clear_cnt[STAGE];
+int stage = -1; // 스테이지 초기 값
+int box_cnt[STAGE]; // $ 개수
+int clear_cnt[STAGE]; // O 개수
 int save_count = 0;
 int undo_count = 5;
 int move_count = 0;
-char username[11];
+char username[11]; // 플레이어 이름
 int d_bl = 0, t_bl = 0;
 char score_name[STAGE][5][11];
 double score_time[STAGE][5];
@@ -30,14 +28,14 @@ clock_t start_clock, end_clock, stop_clock;
 double diff_clock, sum_stop = 0;
 double score;
 
-int getch();
-void MapLoad();
-void MapDraw();
-void MapClear();
-void PlayerMove();
+int getch(); // getch함수
+void MapLoad(); // 맵 로드
+void MapDraw(); // 맵 그리기
+void MapClear(); // 맵 클리어
+void PlayerMove(); // 플레이어 이동
 void UndoMap();
 void Undo();
-void UserName();
+void UserName(); // 플레이어 이름 입력
 void FileLoad();
 bool StageClear();
 void Option(char key);
@@ -50,6 +48,7 @@ void Top(int Top_i);
 void SaveTop();
 void StopTime();
 
+// getch 함수
 int getch(void){
 
    int ch;
@@ -73,6 +72,7 @@ int getch(void){
 
 }
 
+// 맵 로드
 void MapLoad()
 {
   FILE *fp;
@@ -83,6 +83,7 @@ void MapLoad()
 
   while((fscanf(fp, "%c", &ch)) != EOF)
   {
+    // m 일때 새로운 스테이지
     if(ch == 'm')
     {
       stage++;
@@ -94,11 +95,13 @@ void MapLoad()
       continue;
     }
 
+    // e 일때 종료
     if(ch == 'e')
     {
       break;
     }
 
+    // 플레이어 위치 기록
     if(ch == '@')
     {
       player_x[stage] = x;
@@ -108,11 +111,13 @@ void MapLoad()
       origin_player_y[stage] = y;
     }
 
+    // 상자 개수 카운트
     if(ch == '$')
     {
       box_cnt[stage]++;
     }
 
+    // O 개수 카운트
     if(ch == 'O')
     {
       clear_cnt[stage]++;
@@ -123,6 +128,7 @@ void MapLoad()
       y++;
       x = 0;
     }
+    // 맵 저장
     else
     {
       map[stage][y][x] = ch;
@@ -130,7 +136,7 @@ void MapLoad()
       x++;
     }
   }
-
+  // 초기 맵 저장
   for(int i = 0; i < STAGE; i++)
   {
     for(int j = 0; j < Y; j++)
@@ -142,6 +148,7 @@ void MapLoad()
     }
   }
 
+  // $개수와 O개수가 다르면 종료
   for(int i = 0; i < STAGE; i++)
   {
     if(box_cnt[i] != clear_cnt[i])
@@ -151,17 +158,20 @@ void MapLoad()
     }
   }
 
+  // 스테이지 초기 값
   stage = 0;
 
   fclose(fp);
 }
 
+// 맵 그리기
 void MapDraw()
 {
   StageClear();
 
   printf("    Hello %s\n\n", username);
 
+  // 맵 출력
   for(int i = 0; i < Y; i++)
   {
     for(int j = 0; j < X; j++)
@@ -172,6 +182,7 @@ void MapDraw()
   }
 }
 
+// 맵 클리어
 void MapClear()
 {
   system("clear");
@@ -186,15 +197,10 @@ void Save()
   save = fopen("sokoban.txt", "w");
 
   fprintf(save, "%s\n", username);
-
   fprintf(save, "%d\n", stage);
-
   fprintf(save, "%d\n", undo_count);
-
   fprintf(save, "%d\n", move_count);
-
   fprintf(save, "%d\n", save_count);
-
   fprintf(save, "%.1f\n", score);
 
   i = stage;
@@ -208,7 +214,6 @@ void Save()
     fprintf(save, "\n");
   }
 
-
   for(int a = 0; a < 5; a++)
   {
     fprintf(save, "U\n");
@@ -221,6 +226,7 @@ void Save()
       fprintf(save, "\n");
     }
   }
+
   fclose(save);
 }
 
@@ -230,6 +236,7 @@ void FileLoad()
   char ch;
   int load_map[Y][X];
   int load_x = 0, load_y = 0, load_z;
+  int line = 0;
 
   fileload = fopen("sokoban.txt", "r");
   if (fileload == NULL)
@@ -238,16 +245,11 @@ void FileLoad()
 
     exit(1);
   }
-  //fclose(fileload);
 
-  // for(int i = 0; i < 11; i++)
-  // {
-  //   username[i] = ' ';
-  // }
   fscanf(fileload,"%s\n", username);
   fscanf(fileload,"%d\n%d\n%d\n%d\n%f", &stage, &undo_count, &move_count, &save_count, &score);
   fscanf(fileload, "%c", &ch);
-  int line = 0;
+
   while(fscanf(fileload, "%c", &ch) != EOF)
   {
     if(ch == '\n')
@@ -295,12 +297,10 @@ void FileLoad()
       load_x++;
     }
   }
-  // username[++i] = '\0';
 
   printf("\n");
   for(int a = 0; a < 5; a++)
   {
-    //printf("U\n");
     for(int b = 0; b < Y; b++)
     {
       for(int c = 0; c < X; c++)
@@ -310,7 +310,7 @@ void FileLoad()
       printf("\n");
     }
   }
-  // sleep(10);
+
   fclose(fileload);
 }
 
@@ -364,6 +364,7 @@ void UserName()
   MapClear();
 }
 
+// 플레이어 이동
 void PlayerMove()
 {
   char key;
@@ -371,25 +372,30 @@ void PlayerMove()
 
   printf("(Command) ");
 
+  // 키 입력
   key = getch();
 
   switch(key)
   {
+    //  왼쪽 이동
     case 'h':
     case 'H':
       dx = -1;
       break;
 
+    // 아래쪽 이동
     case 'j':
     case 'J':
       dy = 1;
       break;
 
+    // 위쪽 이동
     case 'k':
     case 'K':
       dy = -1;
       break;
 
+    // 오른쪽 이동
     case 'l':
     case 'L':
       dx = 1;
@@ -1037,12 +1043,15 @@ void Undo()
   player_x[stage] = undo_x;
 }
 
-
+// 메인 함수
 int main()
 {
+  // 이름 입력
   UserName();
+  // 맵 로드
   MapLoad();
 
+  // 게임 진행
   while(1)
   {
     MapClear();
