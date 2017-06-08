@@ -46,7 +46,7 @@ void Replay();
 void New();
 void StartTime();
 void EndTime();
-void Top();
+void Top(int Top_i);
 void SaveTop();
 void StopTime();
 
@@ -189,6 +189,14 @@ void Save()
 
   fprintf(save, "%d\n", stage);
 
+  fprintf(save, "%d\n", undo_count);
+
+  fprintf(save, "%d\n", move_count);
+
+  fprintf(save, "%d\n", save_count);
+
+  fprintf(save, "%.1f\n", score);
+
   i = stage;
 
   for(int j = 0; j < Y; j++)
@@ -200,6 +208,19 @@ void Save()
     fprintf(save, "\n");
   }
 
+
+  for(int a = 0; a < 5; a++)
+  {
+    fprintf(save, "U\n");
+    for(int b = 0; b < Y; b++)
+    {
+      for(int c = 0; c < X; c++)
+      {
+        fprintf(save, "%c", undo[a][b][c]);
+      }
+      fprintf(save, "\n");
+    }
+  }
   fclose(save);
 }
 
@@ -207,67 +228,89 @@ void FileLoad()
 {
   FILE *fileload;
   char ch;
-  int i = 0;
-  int j;
   int load_map[Y][X];
-  int load_x = 0, load_y = -2;
-  int line_cnt = 0;
+  int load_x = 0, load_y = 0, load_z;
 
-  if ((fileload = fopen("sokoban.txt", "r")) == NULL)
+  fileload = fopen("sokoban.txt", "r");
+  if (fileload == NULL)
   {
     printf("\n\n\nLoad File Doesn't Exist.\n\n");
 
     exit(1);
   }
-  fclose(fileload);
+  //fclose(fileload);
 
-  for(int i = 0; i < 11; i++)
-  {
-    username[i] = ' ';
-  }
-
-  fileload = fopen("sokoban.txt", "r");
-
+  // for(int i = 0; i < 11; i++)
+  // {
+  //   username[i] = ' ';
+  // }
+  fscanf(fileload,"%s\n", username);
+  fscanf(fileload,"%d\n%d\n%d\n%d\n%f", &stage, &undo_count, &move_count, &save_count, &score);
+  fscanf(fileload, "%c", &ch);
+  int line = 0;
   while(fscanf(fileload, "%c", &ch) != EOF)
   {
     if(ch == '\n')
     {
+      line++;
       load_x = 0;
       load_y++;
-      line_cnt++;
     }
-    else if ((line_cnt == 0) && (('a' <= ch && ch <= 'z') || ('A' <= ch && ch <= 'Z')))
+    else if(line == 29)
     {
-      username[i] = ch;
-      ++i;
-    }
-    else if ((line_cnt == 1) && ('0' <= ch && ch <= '9'))
-    {
-      stage = ch - '0';
+      load_x = 0;
+      load_y = 0;
+      load_z = -1;
+      break;
     }
     else
     {
-      load_map[load_y][load_x] = ch;
-      load_x++;
+    map[stage][load_y][load_x] = ch;
+    load_x++;
     }
 
     if(ch == '@')
     {
-      player_y[stage] = load_y;
       player_x[stage] = load_x - 1;
+      player_y[stage] = load_y;
     }
   }
-
-  username[++i] = '\0';
-
-  for(int a = 0; a < Y; a++)
+  while(fscanf(fileload, "%c", &ch) != EOF)
   {
-    for(int b = 0; b < X; b++)
+    if(ch == 'U')
     {
-      map[stage][a][b] = load_map[a][b];
+      load_x = 0;
+      load_y = 0;
+      load_z++;
+      fscanf(fileload,"%c", &ch);
+    }
+    else if(ch == '\n')
+    {
+      load_x = 0;
+      load_y++;
+    }
+    else
+    {
+      undo[load_z][load_y][load_x] = ch;
+      load_x++;
     }
   }
+  // username[++i] = '\0';
 
+  printf("\n");
+  for(int a = 0; a < 5; a++)
+  {
+    //printf("U\n");
+    for(int b = 0; b < Y; b++)
+    {
+      for(int c = 0; c < X; c++)
+      {
+        printf("%c", undo[a][b][c]);
+      }
+      printf("\n");
+    }
+  }
+  // sleep(10);
   fclose(fileload);
 }
 
@@ -350,10 +393,6 @@ void PlayerMove()
     case 'l':
     case 'L':
       dx = 1;
-      break;
-
-    case '*':
-      stage++;
       break;
   }
 
@@ -666,6 +705,7 @@ void New()
   StartTime();
   MapClear();
   stage = 0;
+  sum_stop = 0;
 
   int i, j, k;
 
@@ -963,8 +1003,6 @@ void UndoMap()
   save_count++;
 }
 
-
-
 void Undo()
 {
   int undo_x = 0, undo_y = 0;
@@ -998,6 +1036,7 @@ void Undo()
   player_y[stage] = undo_y;
   player_x[stage] = undo_x;
 }
+
 
 int main()
 {
