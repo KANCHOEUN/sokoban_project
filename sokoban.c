@@ -10,10 +10,10 @@
 #define STAGE 5 // 최대 스테이지 값
 
 int map[STAGE][Y][X]; // 맵 저장 배열
-int origin_map[STAGE][Y][X];
+int origin_map[STAGE][Y][X]; //최초 맵 배열
 int undo[STAGE][Y][X];
 int player_x[STAGE], player_y[STAGE]; // 플레이어의 위치
-int origin_player_x[STAGE], origin_player_y[STAGE];
+int origin_player_x[STAGE], origin_player_y[STAGE]; //최초의 맵 플레이어 위치
 int stage = -1; // 스테이지 초기 값
 int box_cnt[STAGE]; // $ 개수
 int clear_cnt[STAGE]; // O 개수
@@ -21,12 +21,12 @@ int save_count = 0;
 int undo_count = 5;
 int move_count = 0;
 char username[11]; // 플레이어 이름
-int d_bl = 0, t_bl = 0;
-char score_name[STAGE][5][11];
-double score_time[STAGE][5];
-clock_t start_clock, end_clock, stop_clock;
-double diff_clock, sum_stop = 0;
-double score;
+int d_bl = 0, t_bl = 0; // 디스플레이, 탑 옵션 실행여부
+char score_name[STAGE][5][11]; // 랭킹 이름 배열
+double score_time[STAGE][5]; // 랭킹 점수 배열
+clock_t start_clock, end_clock, stop_clock; // 시작, 끝, 멈춘 시간
+double diff_clock, sum_stop = 0; // 시간 차이, 총 멈춘 시간
+double score; // 점수
 
 int getch(); // getch함수
 void MapLoad(); // 맵 로드
@@ -39,14 +39,14 @@ void UserName(); // 플레이어 이름 입력
 void FileLoad();
 bool StageClear();
 void Option(char key);
-void Display();
-void Replay();
-void New();
-void StartTime();
-void EndTime();
-void Top(int Top_i);
-void SaveTop();
-void StopTime();
+void Display(); // 옵션 설명
+void Replay(); // 현재맵을 처음부터 다시시작
+void New(); // 첫번째 맵부터 다시시작
+void StartTime(); // 시작시각 설정
+void EndTime(); //끝난시각 설정
+void Top(int Top_i); // 랭킹 보여주기
+void SaveTop(); // 랭킹 기록
+void StopTime(); // 멈춘 시간 측정
 
 // getch 함수
 int getch(void){
@@ -479,12 +479,12 @@ bool StageClear()
 
   if(count == clear_cnt[stage])
   {
-    SaveTop();
+    SaveTop(); //점수 기록
     stage++;
     flag = true;
-    score = 0;
-    sum_stop = 0;
-    StartTime();
+    score = 0; //점수 초기화
+    sum_stop = 0; //멈춘시간 초기화
+    StartTime(); //시작시간 재정의
   }
 
   if(stage >= 5)
@@ -544,10 +544,10 @@ void Option(char key)
         if(d_bl==0)
         {
           d_bl = 1;
-          stop_clock = clock();
+          stop_clock = clock(); //흘러가지 않을 시간 시작
           Display();
         }
-        StopTime();
+        StopTime(); //정지된시간 계산
         break;
 
       case 'r' :
@@ -566,7 +566,7 @@ void Option(char key)
         if(t_bl == 0)
         {
           t_bl = 1;
-          stop_clock = clock();
+          stop_clock = clock(); //흘러가지 않을 시간 시작
         }
         switch (enter)
         {
@@ -596,7 +596,7 @@ void Option(char key)
             break;
 
           case '\n' :
-            Top_i = 0;
+            Top_i = 0; //t만 입력했을때
             break;
 
           default :
@@ -610,7 +610,7 @@ void Option(char key)
         {
           if(Top_i == 0)
           {
-            Top(0);
+            Top(0); //맵전체 랭킹기록을 보여줌
             break;
           }
           if(Top_i == -1)
@@ -619,11 +619,11 @@ void Option(char key)
           }
           if(getch() == '\n' && Top_i != 0 && Top_i != -1)
           {
-            Top(Top_i);
+            Top(Top_i); //해당 맵의 랭킹기록을 보여줌
             break;
           }
         }
-        StopTime();
+        StopTime(); //정지된시간 계산
         break;
 
       case 'e':
@@ -693,7 +693,7 @@ void Replay()
   move_count = 0;
   undo_count = 5;
   save_count = 0;
-
+  //초기맵과 초기플레이어위치 불러오기
   i = stage_tmp;
   for(j = 0; j < Y; j++)
   {
@@ -708,10 +708,10 @@ void Replay()
 
 void New()
 {
-  StartTime();
+  StartTime(); //시작시간 재정의
   MapClear();
-  stage = 0;
-  sum_stop = 0;
+  stage = 0; //1스테이지로 변경
+  sum_stop = 0; //멈춘시간 초기화
 
   int i, j, k;
 
@@ -729,7 +729,7 @@ void New()
   move_count = 0;
   undo_count = 5;
   save_count = 0;
-
+  //초기맵과 초기플레이어위치 불러오기
   for(i = 0; i < STAGE; i++)
   {
     for(j = 0; j < Y; j++)
@@ -769,7 +769,7 @@ void SaveTop()
             score_name[i][j][0] = ' ';
             score_name[i][j][1] = ' ';
             score_name[i][j][2] = '\0';
-            break;
+            break; //이름이 0.0 디폴트 값으로 되어있으면 배열에 "  "으로 저장한다
           }
           if(name[k] == '\0')
           {
@@ -782,15 +782,17 @@ void SaveTop()
     }
     if((fscanf(fp, "%c", &a)) == EOF)
     {
-      break;
+      break; //파일이 끝나면 더이상 반복하지 않는다.
     }
   }
 
-  //배열
+  //새로운 점수 값이 입력되면 크기를 비교해 배열에 넣는다.
   for(i = 0; i < 4; i++)
   {
+    //새로운 점수값이 0~3번쨰 점수들 사이에 들어가거나 0을제외한 값중 가장 클때
     if(score_time[stage][i] > score || score_time[stage][i] == 0 )
     {
+      //새로운 점수값이 들어갈자리를 비우기 위해 뒤로 값을 미룬다
       for(j = 0; j < 4-i; j++)
       {
         score_time[stage][4-j] = score_time[stage][3-j];
@@ -799,7 +801,7 @@ void SaveTop()
           score_name[stage][4-j][k] = score_name[stage][3-j][k];
         }
       }
-      for(k = 0; k < 11; k++)
+      for(k = 0; k < 11; k++)  //새로운 점수값 입력
       {
         score_name[stage][i][k] = username[k];
       }
@@ -807,9 +809,7 @@ void SaveTop()
       break;
     }
   }
-
-
-  //가장 클때
+  //새로운 점수가 4번째값일때
   if(score_time[stage][i] > score || score_time[stage][i] == 0)
   {
     score_time[stage][i] = score;
@@ -822,7 +822,7 @@ void SaveTop()
 
   fclose(fp);
 
-//저장
+  //랭킹 파일에 저장
   fp = fopen("ranking.txt", "w");
 
   for(i = 0; i < 5; i++)
@@ -831,7 +831,7 @@ void SaveTop()
     {
       if(score_name[i][j][0] == ' ' && score_name[i][j][1] == ' ' && score_name[i][j][2] == '\0')
       {
-        fprintf(fp, "0.0 ", score_name[i][j]);
+        fprintf(fp, "0.0 ", score_name[i][j]); //이름이 "  "이면 0.0 디폴트 값으로 저장
       }
       else
       {
@@ -855,7 +855,7 @@ void Top(int Top_num)
 
   fp = fopen("ranking.txt", "r");
 
-  //입력
+  //이름과 기록을 읽어들인다.
   while(1)
   {
     for(i = 0; i < STAGE; i++)
@@ -870,7 +870,7 @@ void Top(int Top_num)
             score_name[i][j][0] = ' ';
             score_name[i][j][1] = ' ';
             score_name[i][j][2] = '\0';
-            break;
+            break; //이름이 0.0 디폴트 값으로 되어있으면 배열에 "  "으로 저장한다
           }
           if(name[k] == '\0')
           {
@@ -883,16 +883,16 @@ void Top(int Top_num)
     }
     if((fscanf(fp, "%c", &a)) == EOF)
     {
-      break;
+      break; //파일이 끝나면 더이상 반복하지 않는다.
     }
   }
 
-  int s = 0;
+  int s = 0; //이름이 저장되어있는지의 유무로 출력하기위한 변수
 
-  //출력
+  //Top_i에 따라 출력
   while(1)
   {
-    MapClear();
+    MapClear(); //0일때 모든맵의 기록 출력
     if(Top_num == 0)
     {
       for(i = 0; i < STAGE; i++)
@@ -905,7 +905,7 @@ void Top(int Top_num)
             if(score_name[i][j][0] == ' ' && score_name[i][j][1] == ' ' && score_name[i][j][2] == '\0')
             {
               s = 0;
-              break;
+              break; //이름이 "  "으로 기록이 없으면 출력하지 않게 함
             }
             else
             {
@@ -913,7 +913,7 @@ void Top(int Top_num)
               break;
             }
           }
-          if(s == 1)
+          if(s == 1) //기록이 있을경우 출력
           {
             printf("%s  ", score_name[i][j]);
             printf("%.1f sec", score_time[i][j]);
@@ -933,7 +933,7 @@ void Top(int Top_num)
           if(score_name[i][j][0] == ' ' && score_name[i][j][1] == ' ' && score_name[i][j][2] == '\0')
           {
             s = 0;
-            break;
+            break; //이름이 "  "으로 기록이 없으면 출력하지 않게 함
           }
           else
           {
@@ -941,7 +941,7 @@ void Top(int Top_num)
             break;
           }
         }
-        if(s == 1)
+        if(s == 1) //기록이 있을경우 출력
         {
           printf("%s  ", score_name[i][j]);
           printf("%.1f sec", score_time[i][j]);
@@ -949,7 +949,7 @@ void Top(int Top_num)
         printf("\n");
       }
     }
-    printf("나가려면 t키를 누르시오.");
+    printf("나가려면 t키를 누르시오."); //출력후 들어온 상태면서 t,T 를 누를경우 빠져나간다.
     if(getch()=='t' && t_bl == 1)
     {
       t_bl = 0;
@@ -962,22 +962,22 @@ void Top(int Top_num)
 
 void StartTime()
 {
-  start_clock = clock();
+  start_clock = clock();  //시작시간 재정의
 }
 
 void EndTime()
 {
   end_clock = clock();
 
-  diff_clock = (double)(end_clock - start_clock) / 1000;
-  score = diff_clock - sum_stop;
+  diff_clock = (double)(end_clock - start_clock) / 1000; //전체 시간 측정
+  score = diff_clock - sum_stop; //저체시간 - 정지된 동안의 시간
 }
 
 void StopTime()
 {
   end_clock = clock();
 
-  sum_stop += (double)(end_clock - stop_clock) / 1000;
+  sum_stop += (double)(end_clock - stop_clock) / 1000; //정지된 동안의 시간측정
 }
 
 void UndoMap()
