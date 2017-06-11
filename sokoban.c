@@ -36,9 +36,10 @@ void PlayerMove(); // 플레이어 이동
 void UndoMap(); // 언두 맵 저장
 void Undo();// 언두 기능
 void UserName(); // 플레이어 이름 입력
-void FileLoad();
+void Save(); // 파일 저장하기
+void FileLoad(); // 파일 불러오기
 bool StageClear(); // 스테이지 클리어
-void Option(char key);
+void Option(char key); // 옵션 기능
 void Display(); // 옵션 설명
 void Replay(); // 현재맵을 처음부터 다시시작
 void New(); // 첫번째 맵부터 다시시작
@@ -194,8 +195,10 @@ void Save()
   FILE *save;
   int i;
 
+  // sokoban.txt를 w 모드로 열기
   save = fopen("sokoban.txt", "w");
 
+  // username, stage, undo_count, move_count, save_count, score 저장
   fprintf(save, "%s\n", username);
   fprintf(save, "%d\n", stage);
   fprintf(save, "%d\n", undo_count);
@@ -204,7 +207,7 @@ void Save()
   fprintf(save, "%.1f\n", score);
 
   i = stage;
-
+  // 현재 map 상태 저장
   for(int j = 0; j < Y; j++)
   {
     for(int k = 0; k < X; k++)
@@ -214,9 +217,10 @@ void Save()
     fprintf(save, "\n");
   }
 
+  // undo 1번, 2번, ..., 5번 했을 때 각각의 map 상태 저장
   for(int a = 0; a < 5; a++)
   {
-    fprintf(save, "U\n");
+    fprintf(save, "U\n"); // Undo 맵 구분을 위해 U 표시
     for(int b = 0; b < Y; b++)
     {
       for(int c = 0; c < X; c++)
@@ -238,7 +242,9 @@ void FileLoad()
   int load_x = 0, load_y = 0, load_z;
   int line = 0;
 
+  // sokoban.txt를 r 모드로 열기
   fileload = fopen("sokoban.txt", "r");
+  // 로드한 파일이 빈 파일일 경우, 프로그램 종료하기
   if (fileload == NULL)
   {
     printf("\n\n\nLoad File Doesn't Exist.\n\n");
@@ -250,14 +256,17 @@ void FileLoad()
   fscanf(fileload,"%d\n%d\n%d\n%d\n%f", &stage, &undo_count, &move_count, &save_count, &score);
   fscanf(fileload, "%c", &ch);
 
+  // 파일의 끝부분까지 파일에 있는 내용 읽기
   while(fscanf(fileload, "%c", &ch) != EOF)
   {
+    // ch가 '\n' 개행일 경우, x좌표 0으로 초기화, line과 y좌표 1씩 증가
     if(ch == '\n')
     {
       line++;
       load_x = 0;
       load_y++;
     }
+    // 좌표 초기화하고 저장시킨 Undo 맵을 읽지 않기 위해 멈추기
     else if(line == 29)
     {
       load_x = 0;
@@ -265,33 +274,37 @@ void FileLoad()
       load_z = -1;
       break;
     }
+    // 읽어들인 문자를 대입하고 x좌표 1씩 증가
     else
     {
     map[stage][load_y][load_x] = ch;
     load_x++;
     }
 
+    // 플레이어 위치 좌표
     if(ch == '@')
     {
       player_x[stage] = load_x - 1;
       player_y[stage] = load_y;
     }
   }
+
+  // 파일의 끝부분까지 파일에 있는 내용 읽기 (Undo 맵 불러오기)
   while(fscanf(fileload, "%c", &ch) != EOF)
   {
-    if(ch == 'U')
+    if(ch == 'U') // 'U'를 만날 때마다 좌표 초기화
     {
       load_x = 0;
       load_y = 0;
       load_z++;
       fscanf(fileload,"%c", &ch);
     }
-    else if(ch == '\n')
+    else if(ch == '\n') // ch가 '\n' 개행일 경우, x좌표 초기화, y좌표 1씩 증가
     {
       load_x = 0;
       load_y++;
     }
-    else
+    else  // 읽어들인 문자를 대입하고 x좌표 1씩 증가
     {
       undo[load_z][load_y][load_x] = ch;
       load_x++;
@@ -322,6 +335,7 @@ void UserName()
 
   printf("Start....\n");
 
+  // username[i]를 공백으로 초기화
   for(int i = 0; i < 11; i++)
   {
     username[i] = ' ';
@@ -334,6 +348,7 @@ void UserName()
     printf("input name : ");
     scanf("%s", username);
 
+    // username[i]의 값이 영문자 혹은 '\0'의 값이 아닐 경우
     for(int i = 0; i < 11; i++)
     {
       if(!(('a' <= username[i] && username[i] <= 'z') || ('A' <= username[i] && username[i] <= 'Z')) && (username[i] != '\0'))
@@ -345,9 +360,10 @@ void UserName()
         break;
     }
 
+    // username[length]의 값이 '\0'일 때까지 반복
     while(username[length] != '\0')
     {
-      if(length > 9)
+      if(length > 9) // username의 글자가 10문자 초과했을 경우
         flag = false;
 
       length++;
@@ -520,6 +536,7 @@ void Option(char key)
   char enter;
   int Top_i;
 
+  // h(H), j(J), k(K), l(L) 를 제외한 키 출력하기
   if(((((((key != 'h' && key != 'j') && key != 'k') && key != 'l') && key != 'H') && key != 'J') && key != 'K') && key != 'L')
     printf("%c", key);
 
@@ -530,13 +547,13 @@ void Option(char key)
       case 's':
       case 'S':
       if(enter == '\n')
-        Save();
+        Save(); // s(S) 키를 눌렀을 때 Save() 기능 실행
         break;
 
       case 'f':
       case 'F':
       if(enter == '\n')
-        FileLoad();
+        FileLoad(); // f(F) 키를 눌렀을 때 FileLoad() 기능 실행
         break;
 
       case 'd' :
@@ -570,6 +587,7 @@ void Option(char key)
         }
         switch (enter)
         {
+          // enter 값이 1, 2, 3, 4, 5일 경우 각각의 스테이지 Top 출력
           case '1' :
             printf("1");
             Top_i = 1;
@@ -595,6 +613,7 @@ void Option(char key)
             Top_i = 5;
             break;
 
+          // enter 값이 '\n' 개행일 경우 전체 Top 출력
           case '\n' :
             Top_i = 0; //t만 입력했을때
             break;
@@ -631,7 +650,7 @@ void Option(char key)
       if(enter == '\n')
         MapClear();
         printf("\n\n\nSEE YOU %s . . . .\n\n\n", username);
-        Save();
+        Save(); // 게임 종료하기 전에 저장하기
         exit(0);
         break;
 
