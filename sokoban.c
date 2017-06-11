@@ -11,15 +11,15 @@
 
 int map[STAGE][Y][X]; // 맵 저장 배열
 int origin_map[STAGE][Y][X]; //최초 맵 배열
-int undo[STAGE][Y][X];
+int undo[STAGE][Y][X]; // 언두 맵 저장 배열
 int player_x[STAGE], player_y[STAGE]; // 플레이어의 위치
 int origin_player_x[STAGE], origin_player_y[STAGE]; //최초의 맵 플레이어 위치
 int stage = -1; // 스테이지 초기 값
 int box_cnt[STAGE]; // $ 개수
 int clear_cnt[STAGE]; // O 개수
-int save_count = 0;
-int undo_count = 5;
-int move_count = 0;
+int save_count = 0; // 언두 맵 저장 횟수
+int undo_count = 5; // 언두 가능 횟수
+int move_count = 0; // 움직인 횟수
 char username[11]; // 플레이어 이름
 int d_bl = 0, t_bl = 0; // 디스플레이, 탑 옵션 실행여부
 char score_name[STAGE][5][11]; // 랭킹 이름 배열
@@ -33,11 +33,11 @@ void MapLoad(); // 맵 로드
 void MapDraw(); // 맵 그리기
 void MapClear(); // 맵 클리어
 void PlayerMove(); // 플레이어 이동
-void UndoMap();
-void Undo();
+void UndoMap(); // 언두 맵 저장
+void Undo();// 언두 기능
 void UserName(); // 플레이어 이름 입력
 void FileLoad();
-bool StageClear();
+bool StageClear(); // 스테이지 클리어
 void Option(char key);
 void Display(); // 옵션 설명
 void Replay(); // 현재맵을 처음부터 다시시작
@@ -401,66 +401,66 @@ void PlayerMove()
       dx = 1;
       break;
   }
-
+  // h, j, k, l 이외의 명령이 들어올 경우 Option() 함수를 통하여 입력받음
   if(((((((key != 'h' && key != 'j') && key != 'k') && key != 'l') && key != 'H') && key != 'J') && key != 'K') && key != 'L')
   {
     Option(key);
   }
-
-  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '#')
+  // 충돌 체크
+  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '#') // 앞에 '#'벽이 있으면
   {
-    dx = 0;
+    dx = 0; // 움직이지 않음
     dy = 0;
   }
-  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$')
+  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$') // '$'상자를 만난다면
   {
-    if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == ' ')
+    if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == ' ') // 그 앞이 공백이라면
     {
-      UndoMap();
-      map[stage][player_y[stage] + dy][player_x[stage] + dx] = '@';
-      map[stage][player_y[stage] + 2*dy][player_x[stage]+ 2*dx] = '$';
+      UndoMap(); // 언두 맵 저장
+      map[stage][player_y[stage] + dy][player_x[stage] + dx] = '@'; // 움직인 후 플레이어 좌표 저장
+      map[stage][player_y[stage] + 2*dy][player_x[stage]+ 2*dx] = '$'; // 움직인 후 상자 좌표 저장
     }
-    else if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == '#' || map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == '$')
+    else if(map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == '#' || map[stage][player_y[stage] + 2*dy][player_x[stage] + 2*dx] == '$') // 플레이어가 상자를 밀고 있을때 상자 앞이 # 이거나 $ 이라면
     {
-      dx = 0;
+      dx = 0; // 움직이지 않음
       dy = 0;
     }
   }
 
-  if(map[stage][player_y[stage]+ dy][player_x[stage] + dx] == ' ')
+  if(map[stage][player_y[stage]+ dy][player_x[stage] + dx] == ' ') // 플레이어가 움직인다면
   {
-    UndoMap();
+    UndoMap(); // 언두 맵 저장
   }
 
-  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == 'O')
+  if(map[stage][player_y[stage] + dy][player_x[stage] + dx] == 'O') // 'O'를 만난다면
   {
-    UndoMap();
+    UndoMap(); // 언두 맵 저장
   }
 
-  if(map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] == 'O' &&map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$')
+  if(map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] == 'O' &&map[stage][player_y[stage] + dy][player_x[stage] + dx] == '$') // 상자를 밀고 있고, 상자 앞에 'O'가 있다면
   {
-    UndoMap();
-    map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] = '$';
+    UndoMap(); // 언두 맵 저장
+    map[stage][player_y[stage] + 2 * dy][player_x[stage] + 2 * dx] = '$'; // 상자를 앞으로 움직임
   }
 
-  map[stage][player_y[stage]][player_x[stage]] = ' ';
+  map[stage][player_y[stage]][player_x[stage]] = ' '; // 플레이어의 전 위치를 지워줌
 
-  if(origin_map[stage][player_y[stage]][player_x[stage]] == 'O')
+  if(origin_map[stage][player_y[stage]][player_x[stage]] == 'O') // 원래 맵에서 'O'였으면
   {
-    map[stage][player_y[stage]][player_x[stage]] = 'O';
+    map[stage][player_y[stage]][player_x[stage]] = 'O'; // 'O' 계속 유지
   }
 
-  player_x[stage] += dx;
-  player_y[stage] += dy;
-  map[stage][player_y[stage]][player_x[stage]] = '@';
+  player_x[stage] += dx; // 플레이어 좌표 설정
+  player_y[stage] += dy; // 플레이어 좌표 설정
+  map[stage][player_y[stage]][player_x[stage]] = '@'; // @에 플레이어 좌표 대입
 
-  if(!(dx == 0 && dy == 0))
+  if(!(dx == 0 && dy == 0)) // 움직임이 있다면
   {
-    move_count++;
+    move_count++; // move_count를 올린다
   }
 
 }
-
+// 스테이지 클리어
 bool StageClear()
 {
   int count = 0;
@@ -470,31 +470,31 @@ bool StageClear()
   {
     for(int x = 0; x < X; x++)
     {
-      if(origin_map[stage][y][x] == 'O' && map[stage][y][x] == '$')
+      if(origin_map[stage][y][x] == 'O' && map[stage][y][x] == '$') // 원래 맵의 O의 좌표와 현재 맵의 $의 좌표가 같을 경우
       {
-        count++;
+        count++; // count값이 증가
       }
     }
   }
 
-  if(count == clear_cnt[stage])
+  if(count == clear_cnt[stage]) // count 값이 스테이지 클리어를 위한 값과 같을 때
   {
     SaveTop(); //점수 기록
-    stage++;
-    flag = true;
+    stage++; // 스테이지 증가
+    flag = true; // flag에 true값
     score = 0; //점수 초기화
     sum_stop = 0; //멈춘시간 초기화
     StartTime(); //시작시간 재정의
   }
 
-  if(stage >= 5)
+  if(stage >= 5) // 5스테이지 까지 클리어할 경우
   {
-    printf("\n\nCongratulations !\n");
+    printf("\n\nCongratulations !\n"); // 축하 문구전송
     printf("\nAll Stage Clear !\n\n");
-    exit(0);
+    exit(0); // 프로그램 종료
   }
 
-  if(flag)
+  if(flag) // 스테이지가 올라가면 언두저장맵을 초기화시킴
   {
     for(int k = 0; k < STAGE; k++)
     {
@@ -507,9 +507,9 @@ bool StageClear()
       }
     }
 
-    save_count = 0;
-    undo_count = 5;
-    move_count = 0;
+    save_count = 0; // 스테이지가 올라가면 세이브 카운트 초기화
+    undo_count = 5; // 스테이지가 올라가면  언두 카운트 초기화
+    move_count = 0; // 스테이지가 올라가면 무브 카운트 초기화
   }
 
   return flag;
@@ -636,7 +636,7 @@ void Option(char key)
         break;
 
       case 'u':
-      case 'U':
+      case 'U'://u, U 가 입력시 언두 기능 실행
       if(enter == '\n')
         Undo();
         break;
@@ -979,11 +979,11 @@ void StopTime()
 
   sum_stop += (double)(end_clock - stop_clock) / 1000; //정지된 동안의 시간측정
 }
-
+// 언두 맵 저장
 void UndoMap()
 {
   int i, j, k = 0;
-
+  // 언두 맵 저장횟수가 5번이 넘었을경우
   if(save_count >= 5)
   {
     for(i = 1; i < STAGE; i++)
@@ -992,13 +992,13 @@ void UndoMap()
       {
         for(k = 0; k < X; k++)
         {
-          undo[i - 1][j][k] = undo[i][j][k];
+          undo[i - 1][j][k] = undo[i][j][k]; // 마지막 언두 저장맵을 버림
         }
       }
     }
     save_count--;
   }
-
+  // 언두를 위한 맵 저장
   for(j = 0; j < Y; j++)
   {
     for(k = 0; k < X; k++)
@@ -1008,13 +1008,13 @@ void UndoMap()
   }
   save_count++;
 }
-
+// 언두 실행
 void Undo()
 {
   int undo_x = 0, undo_y = 0;
 
   if((undo_count < 1) || ((5 - undo_count) >= move_count))
-    return;
+    return; // 언두 카운트가 0이거나 무브 카운트가 0인데 언두 가능 횟수가 남아 있을 경우 언두를 실행하지 않음
 
   undo_count--;
   save_count--;
@@ -1023,10 +1023,10 @@ void Undo()
   {
     for(int j = 0; j < X; j++)
     {
-      map[stage][i][j] = undo[save_count][i][j];
+      map[stage][i][j] = undo[save_count][i][j]; // 현재 맵을 언두맵에서 저장한 맵으로 대체함
     }
   }
-
+  // @의 좌표값을 저장함
   for(int i = 0; i < Y; i++)
   {
     for(int j = 0; j < X; j++)
@@ -1039,8 +1039,8 @@ void Undo()
     }
   }
 
-  player_y[stage] = undo_y;
-  player_x[stage] = undo_x;
+  player_y[stage] = undo_y; // 플레이어 y좌표 조정
+  player_x[stage] = undo_x; // 플레이어 x좌표 조정
 }
 
 // 메인 함수
